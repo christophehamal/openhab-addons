@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="sensorpush"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<bridge-type id="account">
+		<label>SensorPush account</label>
+		<description>Account on SensorPush Cloud</description>
+
+		<channels>
+			<channel id="channel1" typeId="sample-channel"/>
+		</channels>
+
+		<config-description>
+			<parameter name="email" type="text" required="true">
+				<label>Email</label>
+				<context>email</context>
+				<required>true</required>
+				<description>Email used to sign in to SensorPush Cloud</description>
+			</parameter>
+			<parameter name="password" type="text" required="true">
+				<label>Password</label>
+				<context>password</context>
+				<required>true</required>
+				<description>Password used to sign in to SensorPush Cloud</description>
+			</parameter>
+		</config-description>
+	</bridge-type>
+
+	<thing-type id="sensor">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="account"/>
+		</supported-bridge-type-refs>
+
+		<label>SensorPush sensor</label>
+		<description>Connected sensor from SensorPush</description>
+
+		<channels>
+			<channel id="channel1" typeId="sample-channel"/>
+		</channels>
+	</thing-type>
+
+	<!-- Sample Channel Type -->
+	<channel-type id="sample-channel">
+		<item-type>Number:Temperature</item-type>
+		<label>Example Temperature</label><!-- Use uppercase words, except prepositions. 2-3 words, max 25 chars -->
+		<description>Sample channel for SensorPush Binding</description>
+	</channel-type>
+</thing:thing-descriptions>
