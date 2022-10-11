@@ -88,9 +88,10 @@ public class SensorPushAPI {
      * @return response if successful, null if not
      */
     @Nullable
-    private ContentResponse PostRequest(Map<String, String> bodyMap) {
+    private ContentResponse PostRequest(String url, Map<String, String> bodyMap) {
         try {
-            return httpClient.newRequest(ACCESSTOKEN_URL).header(HttpHeader.ACCEPT, JSON_CONTENT_TYPE)
+            logger.debug("Launching request with body: {}", gson.toJson(bodyMap));
+            return httpClient.newRequest(url).header(HttpHeader.ACCEPT, JSON_CONTENT_TYPE)
                     .header(HttpHeader.CACHE_CONTROL, "no-cache").method(HttpMethod.POST)
                     .content(new StringContentProvider(JSON_CONTENT_TYPE, gson.toJson(bodyMap), StandardCharsets.UTF_8))
                     .send();
@@ -115,18 +116,16 @@ public class SensorPushAPI {
         if (token != null) {
             bodyMap.put("authorization", token);
         }
-        ContentResponse response = PostRequest(bodyMap);
+        ContentResponse response = PostRequest(ACCESSTOKEN_URL, bodyMap);
         if (response != null) {
             try {
                 TypeToken<Map<String, String>> responseMapType = new TypeToken<Map<String, String>>() {
                 };
                 Map<String, String> responseMap;
-                String localAccessToken = "";
                 responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
                 if (HttpStatus.isSuccess(response.getStatus()) && !responseMap.isEmpty()) {
-                    localAccessToken = (responseMap.get("accesstoken") != null ? responseMap.get("accesstoken") : "");
+                    accessToken = (responseMap.get("accesstoken") != null ? responseMap.get("accesstoken") : "");
                     accessTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE));
-                    accessToken = localAccessToken;
                     return accessToken;
                 } else
                     throw new IOException(String.valueOf(response.getStatus()) + " - " + response.getReason());
@@ -148,7 +147,7 @@ public class SensorPushAPI {
         Map<String, String> bodyMap = new HashMap<>();
         bodyMap.put("email", email);
         bodyMap.put("password", password);
-        ContentResponse response = PostRequest(bodyMap);
+        ContentResponse response = PostRequest(AUTHORIZE_URL, bodyMap);
         if (response != null) {
             try {
                 TypeToken<Map<String, String>> responseMapType = new TypeToken<Map<String, String>>() {

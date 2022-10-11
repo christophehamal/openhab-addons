@@ -57,8 +57,8 @@ public class SensorPushAccountHandler extends BaseBridgeHandler {
         updateStatus(ThingStatus.UNKNOWN);
 
         scheduler.execute(() -> {
-
-            if (api.getAccessToken() != null) {
+            String token = api.getAccessToken();
+            if (!token.isEmpty() && token != null) {
                 updateStatus(ThingStatus.ONLINE);
             } else {
                 updateStatus(ThingStatus.OFFLINE);

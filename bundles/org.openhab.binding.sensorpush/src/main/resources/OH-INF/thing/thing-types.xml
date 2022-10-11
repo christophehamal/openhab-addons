@@ -5,7 +5,7 @@
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 	<bridge-type id="account">
-		<label>SensorPush account</label>
+		<label>SensorPush Account</label>
 		<description>Account on SensorPush Cloud</description>
 
 		<channels>
@@ -33,7 +33,7 @@
 			<bridge-type-ref id="account"/>
 		</supported-bridge-type-refs>
 
-		<label>SensorPush sensor</label>
+		<label>SensorPush Sensor</label>
 		<description>Connected sensor from SensorPush</description>
 
 		<channels>
