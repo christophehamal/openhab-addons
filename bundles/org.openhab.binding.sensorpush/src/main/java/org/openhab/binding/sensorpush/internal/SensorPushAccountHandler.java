@@ -12,14 +12,22 @@
  */
 package org.openhab.binding.sensorpush.internal;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.openhab.binding.sensorpush.internal.api.SensorPushAPI;
+import org.openhab.binding.sensorpush.internal.dto.Sensor;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +44,11 @@ import com.google.gson.Gson;
 public class SensorPushAccountHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SensorPushAccountHandler.class);
+
     private final HttpClient httpClient;
     private final Gson gson;
     private @Nullable SensorPushAPI api;
-
-    private @Nullable SensorPushAPI sensorPushAPI;
+    private @Nullable ScheduledFuture pollingJob;
 
     public SensorPushAccountHandler(Bridge bridge, HttpClient httpClient, Gson gson) {
         super(bridge);
@@ -60,15 +68,41 @@ public class SensorPushAccountHandler extends BaseBridgeHandler {
             String token = api.getAccessToken();
             if (!token.isEmpty() && token != null) {
                 updateStatus(ThingStatus.ONLINE);
+                pollingJob = scheduler.scheduleWithFixedDelay(this::pollingCode, 0, 30, TimeUnit.SECONDS);
             } else {
                 updateStatus(ThingStatus.OFFLINE);
             }
         });
     }
 
+    @Nullable
+    public Map<String, Sensor> getSensors() {
+        assert api != null;
+        return api.getSensors();
+    }
+
+    @Override
+    public Collection<Class<? extends ThingHandlerService>> getServices() {
+        return Collections.singleton(SensorPushDiscoveryService.class);
+    }
+
+    private void pollingCode() {
+        // TODO: update state through api (get input, update state)
+        Map<String, Sensor> sensors = getSensors();
+        // SensorPushSensorHandler sensorHandler = get
+        // sensors.forEach(id, sensor) -> {
+        //
+        // };
+    }
+
     @Override
     public void dispose() {
-        api.dispose();
+        if (api != null) {
+            api.dispose();
+        }
+        if (pollingJob != null) {
+            pollingJob.cancel(true);
+        }
         super.dispose();
     }
 

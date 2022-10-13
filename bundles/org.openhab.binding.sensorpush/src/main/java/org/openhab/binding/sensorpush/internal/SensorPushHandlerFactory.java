@@ -30,6 +30,8 @@ import org.openhab.core.thing.binding.ThingHandlerFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,6 +47,7 @@ import com.google.gson.JsonDeserializer;
 @Component(configurationPid = "binding.sensorpush", service = ThingHandlerFactory.class)
 public class SensorPushHandlerFactory extends BaseThingHandlerFactory {
 
+    private static final Logger logger = LoggerFactory.getLogger(SensorPushHandlerFactory.class);
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_ACCOUNT, THING_TYPE_SENSOR);
     private final HttpClient httpClient;
     private final Gson gson;
@@ -69,8 +72,11 @@ public class SensorPushHandlerFactory extends BaseThingHandlerFactory {
 
         if (THING_TYPE_ACCOUNT.equals(thingTypeUID)) {
             return new SensorPushAccountHandler((Bridge) thing, httpClient, gson);
+        } else if (THING_TYPE_SENSOR.equals(thingTypeUID)) {
+            return new SensorPushSensorHandler(thing, gson);
+        } else {
+            logger.debug("Could not instantiate Handler for {}", thing.getLabel());
+            return null;
         }
-
-        return null;
     }
 }

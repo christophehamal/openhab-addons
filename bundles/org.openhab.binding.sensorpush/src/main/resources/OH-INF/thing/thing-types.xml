@@ -28,23 +28,34 @@
 		</config-description>
 	</bridge-type>
 
-	<thing-type id="sensor">
+	<thing-type id="sensor" listed="false">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="account"/>
 		</supported-bridge-type-refs>
 
 		<label>SensorPush Sensor</label>
 		<description>Connected sensor from SensorPush</description>
+		<category>Sensor</category>
 
 		<channels>
-			<channel id="channel1" typeId="sample-channel"/>
+			<channel id="active" typeId="power"/>
+			<channel id="batteryVoltage" typeId="battery-level"/>
+			<channel id="rssi" typeId="signal-strength"/>
 		</channels>
+
+		<properties>
+			<property name="vendor">SensorPush</property>
+			<property name="modelId">SensorType</property>
+			<property name="id">Id</property>
+			<property name="name">Name</property>
+			<property name="MACAddress">MACAddress</property>
+		</properties>
 	</thing-type>
 
 	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>Number:Temperature</item-type>
-		<label>Example Temperature</label><!-- Use uppercase words, except prepositions. 2-3 words, max 25 chars -->
-		<description>Sample channel for SensorPush Binding</description>
+	<channel-type id="address">
+		<item-type>String</item-type>
+		<label>MAC Address</label>
+		<description>MAC Address of the device</description>
 	</channel-type>
 </thing:thing-descriptions>

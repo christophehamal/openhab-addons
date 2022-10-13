@@ -16,8 +16,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -25,11 +25,13 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.openhab.binding.sensorpush.internal.SensorPushConfiguration;
+import org.openhab.binding.sensorpush.internal.dto.Sensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +57,10 @@ public class SensorPushAPI {
     private final String SENSORS_URL = BASE_URL + "/devices/sensors";
     private final long AUTHORIZATION_TOKEN_TIMEOUT = 60;
     private final long ACCESS_TOKEN_TIMEOUT = 30;
-    private @Nullable ZonedDateTime authorizationTokenTimeStamp;
-    private @Nullable ZonedDateTime accessTokenTimeStamp;
-    private @Nullable String authorizationToken = "";
-    private @Nullable String accessToken = "";
+    private ZonedDateTime authorizationTokenTimeStamp = ZonedDateTime.parse("2010-01-01T10:00:00+01:00[Europe/Paris]");
+    private ZonedDateTime accessTokenTimeStamp = ZonedDateTime.parse("2010-01-01T10:00:00+01:00[Europe/Paris]");
+    private String authorizationToken = "";
+    private String accessToken = "";
 
     // TODO: change this to more secure.
     private final String email = "christophehamal@hotmail.com";
@@ -88,13 +90,15 @@ public class SensorPushAPI {
      * @return response if successful, null if not
      */
     @Nullable
-    private ContentResponse PostRequest(String url, Map<String, String> bodyMap) {
+    private ContentResponse PostRequest(String url, Map<String, String> bodyMap, @Nullable String accessToken) {
         try {
             logger.debug("Launching request with body: {}", gson.toJson(bodyMap));
-            return httpClient.newRequest(url).header(HttpHeader.ACCEPT, JSON_CONTENT_TYPE)
-                    .header(HttpHeader.CACHE_CONTROL, "no-cache").method(HttpMethod.POST)
-                    .content(new StringContentProvider(JSON_CONTENT_TYPE, gson.toJson(bodyMap), StandardCharsets.UTF_8))
-                    .send();
+            Request request = httpClient.newRequest(url).header(HttpHeader.ACCEPT, JSON_CONTENT_TYPE)
+                    .header(HttpHeader.CACHE_CONTROL, "no-cache").method(HttpMethod.POST).content(
+                            new StringContentProvider(JSON_CONTENT_TYPE, gson.toJson(bodyMap), StandardCharsets.UTF_8));
+            if (accessToken != null)
+                request.header(HttpHeader.AUTHORIZATION, accessToken);
+            return request.send();
         } catch (TimeoutException e) {
             logger.debug("Refresh call timed out: {}", e.getMessage());
         } catch (ExecutionException | InterruptedException e) {
@@ -106,67 +110,59 @@ public class SensorPushAPI {
     /**
      * Helper method to refresh the access token while the authorization token is still valid
      *
-     * @return access token if successful, null if not
      */
-    @Nullable
-    private String refreshAccessToken() {
+    private void refreshAccessToken() {
         logger.debug("Obtaining a new access token, using the authorization token");
         Map<String, String> bodyMap = new HashMap<>();
-        String token = authorizationToken;
-        if (token != null) {
-            bodyMap.put("authorization", token);
-        }
-        ContentResponse response = PostRequest(ACCESSTOKEN_URL, bodyMap);
+        bodyMap.put("authorization", authorizationToken);
+        ContentResponse response = PostRequest(ACCESSTOKEN_URL, bodyMap, "");
         if (response != null) {
             try {
-                TypeToken<Map<String, String>> responseMapType = new TypeToken<Map<String, String>>() {
+                TypeToken<Map<String, Object>> responseMapType = new TypeToken<>() {
                 };
-                Map<String, String> responseMap;
+                Map<String, Object> responseMap;
                 responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
                 if (HttpStatus.isSuccess(response.getStatus()) && !responseMap.isEmpty()) {
-                    accessToken = (responseMap.get("accesstoken") != null ? responseMap.get("accesstoken") : "");
+                    accessToken = Objects.requireNonNullElse(responseMap.get("accesstoken").toString(), "");
                     accessTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE));
-                    return accessToken;
                 } else
-                    throw new IOException(String.valueOf(response.getStatus()) + " - " + response.getReason());
+                    throw new IOException(response.getStatus() + " - " + response.getReason());
             } catch (Exception e) {
                 logger.debug("Refresh call could not complete: {}", e.getMessage());
             }
         }
-        return null;
     }
 
     /**
      * Helper method to obtain an authorization token with email / password combination
      *
-     * @return authorization token if successful, null if not
      */
-    @Nullable
-    private String authorize() {
+    private void authorize() {
         logger.debug("Obtaining a new authorization token, using email / password");
         Map<String, String> bodyMap = new HashMap<>();
         bodyMap.put("email", email);
         bodyMap.put("password", password);
-        ContentResponse response = PostRequest(AUTHORIZE_URL, bodyMap);
+        ContentResponse response = PostRequest(AUTHORIZE_URL, bodyMap, "");
         if (response != null) {
             try {
-                TypeToken<Map<String, String>> responseMapType = new TypeToken<Map<String, String>>() {
+                TypeToken<Map<String, Object>> responseMapType = new TypeToken<>() {
                 };
-                Map<String, String> responseMap = new HashMap<>();
+                Map<String, Object> responseMap;
                 if (HttpStatus.isSuccess(response.getStatus())) {
                     responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
                     if (responseMap.get("authorization") != null) {
-                        authorizationToken = responseMap.get("authorization");
+                        authorizationToken = Objects.requireNonNullElse(responseMap.get("authorization").toString(),
+                                "");
                     }
-                    authorizationTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE));
-                    return authorizationToken;
+                    ZonedDateTime tempTime = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE),
+                            DateTimeFormatter.RFC_1123_DATE_TIME);
+                    authorizationTokenTimeStamp = tempTime;
                 } else
-                    throw new IOException(String.valueOf(response.getStatus()) + " - " + response.getReason());
+                    throw new IOException(response.getStatus() + " - " + response.getReason());
             } catch (Exception e) {
                 logger.debug("Authorization call could not complete: {}", e.getMessage());
             }
         }
-        return null;
     }
 
     /**
@@ -174,7 +170,6 @@ public class SensorPushAPI {
      *
      * @return access token if successful, null if not
      */
-    @Nullable
     public String getAccessToken() {
         if (!"".equals(accessToken)
                 && ZonedDateTime.now().isBefore(accessTokenTimeStamp.plus(Duration.ofMinutes(ACCESS_TOKEN_TIMEOUT)))) {
@@ -191,6 +186,32 @@ public class SensorPushAPI {
             return "";
         }
         return accessToken;
+    }
+
+    @Nullable
+    public Map<String, Sensor> getSensors() {
+        accessToken = this.getAccessToken();
+        Map<String, String> bodyMap = new HashMap<>();
+        ContentResponse response = PostRequest(SENSORS_URL, bodyMap, accessToken);
+        if (response != null) {
+            try {
+                TypeToken<Map<String, Sensor>> responseMapType = new TypeToken<>() {
+                };
+                Map<String, Sensor> responseMap;
+                if (HttpStatus.isSuccess(response.getStatus())) {
+                    responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
+                    if (!responseMap.isEmpty()) {
+                        return responseMap;
+                    } else
+                        logger.debug("No sensors found");
+                } else
+                    throw new IOException(response.getStatus() + " - " + response.getReason());
+            } catch (Exception e) {
+                logger.debug("Could not retrieve sensors: {}", e.getMessage());
+            }
+        }
+        logger.debug("Could not retrieve sensors, no response");
+        return null;
     }
 
     public void dispose() {
