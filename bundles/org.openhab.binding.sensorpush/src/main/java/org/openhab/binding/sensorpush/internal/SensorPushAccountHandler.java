@@ -12,20 +12,27 @@
  */
 package org.openhab.binding.sensorpush.internal;
 
+import static org.openhab.binding.sensorpush.internal.SensorPushBindingConstants.*;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import javax.measure.quantity.Temperature;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.openhab.binding.sensorpush.internal.api.SensorPushAPI;
+import org.openhab.binding.sensorpush.internal.dto.Sample;
+import org.openhab.binding.sensorpush.internal.dto.SampleList;
 import org.openhab.binding.sensorpush.internal.dto.Sensor;
-import org.openhab.core.thing.Bridge;
-import org.openhab.core.thing.ChannelUID;
-import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.library.types.PercentType;
+import org.openhab.core.library.types.QuantityType;
+import org.openhab.core.library.unit.ImperialUnits;
+import org.openhab.core.thing.*;
 import org.openhab.core.thing.binding.BaseBridgeHandler;
 import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
@@ -87,12 +94,24 @@ public class SensorPushAccountHandler extends BaseBridgeHandler {
     }
 
     private void pollingCode() {
-        // TODO: update state through api (get input, update state)
-        Map<String, Sensor> sensors = getSensors();
-        // SensorPushSensorHandler sensorHandler = get
-        // sensors.forEach(id, sensor) -> {
-        //
-        // };
+        assert api != null;
+        SampleList sampleList = api.getSamples();
+        if (sampleList != null) {
+            sampleList.getSensors().forEach((sensor, samples) -> {
+                Thing thingToUpdate = this.getThing().getThings().stream()
+                        .filter(thing -> sensor.equals(thing.getUID().toString())).findFirst().orElse(null);
+                if (thingToUpdate != null) {
+                    ChannelUID temperatureChannel = new ChannelUID(thingToUpdate.getUID(), CHANNEL_TEMPERATURE);
+                    ChannelUID humidityChannel = new ChannelUID(thingToUpdate.getUID(), CHANNEL_HUMIDITY);
+                    Sample lastSample = samples.get(0);
+                    thingToUpdate.getChannels().forEach(c -> {
+                        updateState(temperatureChannel,
+                                new QuantityType<Temperature>(lastSample.getTemperature(), ImperialUnits.FAHRENHEIT));
+                        updateState(humidityChannel, new PercentType((int) lastSample.getHumidity()));
+                    });
+                }
+            });
+        }
     }
 
     @Override

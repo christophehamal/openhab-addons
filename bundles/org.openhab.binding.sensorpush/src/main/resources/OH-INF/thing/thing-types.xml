@@ -8,10 +8,6 @@
 		<label>SensorPush Account</label>
 		<description>Account on SensorPush Cloud</description>
 
-		<channels>
-			<channel id="channel1" typeId="sample-channel"/>
-		</channels>
-
 		<config-description>
 			<parameter name="email" type="text" required="true">
 				<label>Email</label>
@@ -41,6 +37,8 @@
 			<channel id="active" typeId="power"/>
 			<channel id="batteryVoltage" typeId="battery-level"/>
 			<channel id="rssi" typeId="signal-strength"/>
+			<channel id="temperature" typeId="indoor-temperature"/>
+			<channel id="humidity" typeId="atmospheric-humidity"/>
 		</channels>
 
 		<properties>
@@ -52,10 +50,40 @@
 		</properties>
 	</thing-type>
 
-	<!-- Sample Channel Type -->
-	<channel-type id="address">
-		<item-type>String</item-type>
-		<label>MAC Address</label>
-		<description>MAC Address of the device</description>
+	<channel-type id="power">
+		<item-type>Switch</item-type>
+		<label>Power</label>
+		<description>Power of the sensor</description>
+		<category>Switch</category>
 	</channel-type>
+
+	<channel-type id="battery-level">
+		<item-type>Number</item-type>
+		<label>Battery level</label>
+		<description>Battery level of the sensor</description>
+		<category>Battery</category>
+	</channel-type>
+
+	<channel-type id="signal-strength">
+		<item-type>Number</item-type>
+		<label>Connection strength</label>
+		<description>Connection strength of the sensor</description>
+		<category>QualityOfService</category>
+	</channel-type>
+
+	<channel-type id="indoor-temperature">
+		<item-type>Number:Temperature</item-type>
+		<label>Temperature</label>
+		<description>Temperature measured by the sensor</description>
+		<category>Temperature</category>
+	</channel-type>
+
+	<channel-type id="atmospheric-humidity">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Humidity</label>
+		<description>Humidity measured by the sensor</description>
+		<category>Humidity</category>
+	</channel-type>
+
+
 </thing:thing-descriptions>

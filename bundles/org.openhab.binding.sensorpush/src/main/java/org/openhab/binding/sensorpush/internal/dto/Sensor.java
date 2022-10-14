@@ -18,7 +18,7 @@ import java.util.List;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link Sensor} wraps the SensorPush API.
+ * The {@link Sensor} provides the DTO for sensors retrieved from the SensorPush API.
  *
  * @author Christophe Hamal - Initial contribution
  */

@@ -15,6 +15,7 @@ package org.openhab.binding.sensorpush.internal;
 import static org.openhab.binding.sensorpush.internal.SensorPushBindingConstants.*;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -56,8 +57,9 @@ public class SensorPushHandlerFactory extends BaseThingHandlerFactory {
     public SensorPushHandlerFactory(@Reference HttpClientFactory httpClientFactory) {
         this.httpClient = httpClientFactory.createHttpClient(BINDING_ID);
         // TODO: Add deserializers for temperature and humidity data types (and possibly others).
-        this.gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json,
-                type, JsonDeserializationContext) -> ZonedDateTime.parse(json.getAsString().replaceAll("\"+0000", "Z")))
+        this.gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class,
+                (JsonDeserializer<ZonedDateTime>) (json, type, JsonDeserializationContext) -> ZonedDateTime
+                        .parse(json.getAsString(), DateTimeFormatter.RFC_1123_DATE_TIME))
                 .create();
     }
 

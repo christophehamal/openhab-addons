@@ -31,5 +31,9 @@ public class SensorPushBindingConstants {
     public static final ThingTypeUID THING_TYPE_SENSOR = new ThingTypeUID(BINDING_ID, "sensor");
 
     // List of all Channel ids
-    public static final String CHANNEL_1 = "channel1";
+    public static final String CHANNEL_TEMPERATURE = "temperature";
+    public static final String CHANNEL_HUMIDITY = "humidity";
+    public static final String CHANNEL_ACTIVE = "active";
+    public static final String CHANNEL_RSSI = "rssi";
+    public static final String CHANNEL_BATTERY_VOLTAGE = "batteryVoltage";
 }

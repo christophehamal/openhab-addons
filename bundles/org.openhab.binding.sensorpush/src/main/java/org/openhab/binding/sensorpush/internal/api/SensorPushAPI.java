@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.openhab.binding.sensorpush.internal.SensorPushConfiguration;
+import org.openhab.binding.sensorpush.internal.dto.SampleList;
 import org.openhab.binding.sensorpush.internal.dto.Sensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +125,8 @@ public class SensorPushAPI {
                 responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
                 if (HttpStatus.isSuccess(response.getStatus()) && !responseMap.isEmpty()) {
                     accessToken = Objects.requireNonNullElse(responseMap.get("accesstoken").toString(), "");
-                    accessTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE));
+                    accessTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE),
+                            DateTimeFormatter.RFC_1123_DATE_TIME);
                 } else
                     throw new IOException(response.getStatus() + " - " + response.getReason());
             } catch (Exception e) {
@@ -154,9 +156,8 @@ public class SensorPushAPI {
                         authorizationToken = Objects.requireNonNullElse(responseMap.get("authorization").toString(),
                                 "");
                     }
-                    ZonedDateTime tempTime = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE),
+                    authorizationTokenTimeStamp = ZonedDateTime.parse(response.getHeaders().get(HttpHeader.DATE),
                             DateTimeFormatter.RFC_1123_DATE_TIME);
-                    authorizationTokenTimeStamp = tempTime;
                 } else
                     throw new IOException(response.getStatus() + " - " + response.getReason());
             } catch (Exception e) {
@@ -188,6 +189,11 @@ public class SensorPushAPI {
         return accessToken;
     }
 
+    /**
+     * API call to receive the list of sensors
+     *
+     * @return a Map of sensor IDs with the respective properties of each sensor, or null if not successful
+     */
     @Nullable
     public Map<String, Sensor> getSensors() {
         accessToken = this.getAccessToken();
@@ -211,6 +217,37 @@ public class SensorPushAPI {
             }
         }
         logger.debug("Could not retrieve sensors, no response");
+        return null;
+    }
+
+    /**
+     * API call to receive the list of samples
+     *
+     * @return a SampleList, containing a Map of sensors with a list of samples each, or null if not successful
+     */
+    @Nullable
+    public SampleList getSamples() {
+        accessToken = this.getAccessToken();
+        Map<String, String> bodyMap = new HashMap<>();
+        ContentResponse response = PostRequest(SAMPLES_URL, bodyMap, accessToken);
+        if (response != null) {
+            try {
+                TypeToken<SampleList> responseMapType = new TypeToken<>() {
+                };
+                SampleList responseMap;
+                if (HttpStatus.isSuccess(response.getStatus())) {
+                    responseMap = gson.fromJson(response.getContentAsString(), responseMapType.getType());
+                    if (responseMap != null) {
+                        return responseMap;
+                    } else
+                        logger.debug("No samples found");
+                } else
+                    throw new IOException(response.getStatus() + " - " + response.getReason());
+            } catch (Exception e) {
+                logger.debug("Could not retrieve samples: {}", e.getMessage());
+            }
+        }
+        logger.debug("Could not retrieve samples, no response");
         return null;
     }
 
