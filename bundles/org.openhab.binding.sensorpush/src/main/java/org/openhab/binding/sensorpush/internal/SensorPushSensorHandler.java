@@ -16,9 +16,7 @@ import static org.openhab.binding.sensorpush.internal.SensorPushBindingConstants
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.core.thing.ChannelUID;
-import org.openhab.core.thing.Thing;
-import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.*;
 import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
@@ -44,6 +42,16 @@ public class SensorPushSensorHandler extends BaseThingHandler {
         super(thing);
         logger.debug("Initializing SensorPush sensor handler.");
         this.gson = gson;
+    }
+
+    @Override
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        super.bridgeStatusChanged(bridgeStatusInfo);
+        if (ThingStatus.OFFLINE.equals(bridgeStatusInfo.getStatus())) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
+        } else if (ThingStatus.ONLINE.equals(bridgeStatusInfo.getStatus())) {
+            updateStatus(ThingStatus.ONLINE);
+        }
     }
 
     @Override

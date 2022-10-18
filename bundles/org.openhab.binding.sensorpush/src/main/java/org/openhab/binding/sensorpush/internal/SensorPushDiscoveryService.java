@@ -49,6 +49,8 @@ public class SensorPushDiscoveryService extends AbstractDiscoveryService impleme
         super(Collections.singleton(THING_TYPE_SENSOR), SEARCH_TIME, true);
     }
 
+    // TODO: Add background discovery method
+
     @Override
     protected void startScan() {
         Map<String, Sensor> sensors = new HashMap<>();

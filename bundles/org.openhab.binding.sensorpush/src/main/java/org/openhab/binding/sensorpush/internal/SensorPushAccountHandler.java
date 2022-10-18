@@ -75,6 +75,7 @@ public class SensorPushAccountHandler extends BaseBridgeHandler {
             String token = api.getAccessToken();
             if (!token.isEmpty() && token != null) {
                 updateStatus(ThingStatus.ONLINE);
+                pollingCode();
                 pollingJob = scheduler.scheduleWithFixedDelay(this::pollingCode, 0, 30, TimeUnit.SECONDS);
             } else {
                 updateStatus(ThingStatus.OFFLINE);
